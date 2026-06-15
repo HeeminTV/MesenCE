@@ -1,3 +1,4 @@
+#pragma once
 #include "pch.h"
 #include "Shared/Utilities/emu2413.h"
 #include "Utilities/Serializer.h"

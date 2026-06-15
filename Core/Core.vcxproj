@@ -22,6 +22,8 @@
     <ClInclude Include="GBA\GbaCpuMultiply.h" />
     <ClInclude Include="GBA\GbaWaitStates.h" />
     <ClInclude Include="NES\Epsm.h" />
+    <ClInclude Include="NES\Mappers\Audio\HmRomAudio.h" />
+    <ClInclude Include="NES\Mappers\Homebrew\HMROM.h" />
     <ClInclude Include="NES\Mappers\Homebrew\Rainbow.h" />
     <ClInclude Include="NES\Mappers\Homebrew\RainbowAudio.h" />
     <ClInclude Include="NES\Debugger\IExtModeMapperDebug.h" />

@@ -26,6 +26,7 @@
 #include "NES/Mappers/Homebrew/SealieComputing.h"
 #include "NES/Mappers/Homebrew/UnRom512.h"
 #include "NES/Mappers/Homebrew/UnlDripGame.h"
+#include "NES/Mappers/Homebrew/HMROM.h"
 #include "NES/Mappers/Irem/BnRom.h"
 #include "NES/Mappers/Irem/IremG101.h"
 #include "NES/Mappers/Irem/IremH3001.h"
@@ -385,6 +386,7 @@ BaseMapper* MapperFactory::GetMapperFromID(RomData& romData)
 		case 95: return new Namco108_95();
 		case 96: return new OekaKids();
 		case 97: return new IremTamS1();
+		case 98: return new HMROM();
 		case 99: return new VsSystem();
 		case 101: return new JalecoJfxx(true);
 		case 103: return new Mapper103();

@@ -2997,6 +2997,12 @@
     <ClInclude Include="Shared\Utilities\S3511ARtc.h">
       <Filter>Shared\Utilities</Filter>
     </ClInclude>
+    <ClInclude Include="NES\Mappers\Homebrew\HMROM.h">
+      <Filter>NES\Mappers\Homebrew</Filter>
+    </ClInclude>
+    <ClInclude Include="NES\Mappers\Audio\HmRomAudio.h">
+      <Filter>NES\Mappers\Audio</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Shared\Video\RotateFilter.cpp">
