@@ -373,6 +373,7 @@ BaseMapper* MapperFactory::GetMapperFromID(RomData& romData)
 		case 80: return new TaitoX1005(false);
 		case 82: return new TaitoX1017();
 		case 83: return new Mapper83();
+		case 84: return new HMROM();
 		case 85: return new VRC7();
 		case 86: return new JalecoJf13();
 		case 87: return new JalecoJfxx(false);
@@ -386,7 +387,6 @@ BaseMapper* MapperFactory::GetMapperFromID(RomData& romData)
 		case 95: return new Namco108_95();
 		case 96: return new OekaKids();
 		case 97: return new IremTamS1();
-		case 98: return new HMROM();
 		case 99: return new VsSystem();
 		case 101: return new JalecoJfxx(true);
 		case 103: return new Mapper103();
