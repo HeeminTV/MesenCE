@@ -1,10 +1,15 @@
 #pragma once
 #include "pch.h"
 #include "NES/BaseMapper.h"
+#include "NES/Mappers/Audio/HmRomAudio.h"
+#include "NES/Mappers/Audio/Sunsoft5bAudio.h"
 
 class HMROM : public BaseMapper
 {
 private:
+	unique_ptr<HmRomAudio> _audio;
+	unique_ptr<Sunsoft5bAudio> _audio2;
+
 	uint8_t _prgBank; // only used for state display
 	uint8_t _chrBanks[16];
 	uint8_t _chrOuter;
@@ -21,6 +26,7 @@ protected:
 	uint32_t GetWorkRamPageSize() override { return 0x2000; }
 	uint32_t GetSaveRamSize() override { return 0x8000; }
 	uint32_t GetSaveRamPageSize() override { return 0x2000; }
+	bool EnableCpuClockHook() override { return true; }
 	bool EnableVramAddressHook() override { return true; }
 
 	void InitMapper() override
@@ -37,11 +43,22 @@ protected:
 		_inhibitIrq = GetPowerOnByte() & 0x01;
 		_irqCounter = GetPowerOnByte() | ((GetPowerOnByte() << 8) & 0xF00);
 		_ppuA12prev = GetPowerOnByte() & 0x01;
+
+		_audio.reset(new HmRomAudio(_console));
+		_audio2.reset(new Sunsoft5bAudio(_console));
+	}
+
+	void Reset(bool softReset) override
+	{
+		_audio->Reset();
 	}
 
 	void Serialize(Serializer& s) override
 	{
 		BaseMapper::Serialize(s);
+		SV(_audio);
+		SV(_audio2);
+
 		SV(_prgBank);
 		SVArray(_chrBanks, 16);
 		SV(_chrOuter);
@@ -49,6 +66,14 @@ protected:
 		SV(_inhibitIrq);
 		SV(_irqCounter);
 		SV(_ppuA12prev);
+	}
+
+	void ProcessCpuClock() override
+	{
+		BaseProcessCpuClock();
+		_audio->Clock();
+		_audio2->Clock();
+		_audio2->Clock();
 	}
 
 	void WriteRegister(uint16_t addr, uint8_t value) override
@@ -81,6 +106,11 @@ protected:
 				UpdateIrqStatus();
 				break;
 			case 0xC000: // YM2413 / AY-3-8910 port ($B000-$BFFF)
+				if(_romInfo.SubMapperID & 0x01) {
+					_audio2->WriteRegister(addr & 0x01 ? 0xE000 : 0xC000, value);
+				} else {
+					_audio->WriteOPLL(addr & 0x01, value);
+				}
 				break;
 		}
 	}
@@ -107,7 +137,7 @@ protected:
 		if(!_ppuA12prev && PPU_A12) {
 			// PPU A12 rising edge
 			_irqCounter--;
-			_irqCounter &= 0xFFF;
+			// _irqCounter &= 0xFFF;
 			UpdateIrqStatus();
 		}
 		_ppuA12prev = PPU_A12;
@@ -162,6 +192,7 @@ protected:
 		entries.push_back(MapperStateEntry("$A000.7", "IRQ Inhibited", _inhibitIrq, MapperStateValueType::Bool));
 
 		entries.push_back(MapperStateEntry("$B000", "IRQ Counter Value", _irqCounter, MapperStateValueType::Number16));
+
 		return entries;
 	}
 };
