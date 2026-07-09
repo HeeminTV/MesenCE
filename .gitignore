@@ -190,3 +190,6 @@ packages/*
 
 TestHelper/*
 UI/Dependencies.zip
+
+UI/testbuild/
+UI/Properties/PublishProfiles/
