@@ -275,6 +275,7 @@ void WsConsole::InitPostBootRomState()
 
 	WsPpuState& ppu = _ppu->GetState();
 	ppu.LcdEnabled = true;
+	ppu.LcdControl = 0x01;
 	if(_colorModel) {
 		ppu.Scanline = 127;
 		ppu.Cycle = 232;
@@ -321,7 +322,9 @@ void WsConsole::InitPostBootRomState()
 	WsEepromState& eeprom = _internalEeprom->GetState();
 	eeprom.ReadDone = true;
 	eeprom.Idle = true;
-	eeprom.InternalEepromWriteProtected = true;
+	if(!(_prgRom[_prgRomSize - 0x10 + 9] & 0x80)) {
+		eeprom.InternalEepromWriteProtected = true;
+	}
 
 	//Copy data from rom header to internal eeprom, like the boot rom would
 	for(int i = 0; i < 3; i++) {

@@ -59,7 +59,7 @@ private:
 	bool _prevNeedNmi = false;
 	bool _needNmi = false;
 
-	uint64_t _hideCrashWarning = 0;
+	bool _crashed = false;
 	bool _isDmcDmaRead = false;
 
 	__forceinline void StartCpuCycle(bool forRead);
@@ -68,7 +68,7 @@ private:
 	{
 		ProcessPendingDma(readAddress, opType);
 	}
-	uint8_t ProcessDmaRead(uint16_t addr, uint16_t& prevReadAddress, bool enableInternalRegReads, bool isNesBehavior);
+	uint8_t ProcessDmaRead(uint16_t addr, uint16_t& prevReadAddress, bool enableInternalRegReads);
 	__forceinline uint16_t FetchOperand();
 	__forceinline void EndCpuCycle(bool forRead);
 	void IRQ();

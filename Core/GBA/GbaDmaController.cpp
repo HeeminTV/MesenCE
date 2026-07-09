@@ -187,7 +187,7 @@ void GbaDmaController::RunDma(GbaDmaChannel& ch, uint8_t chIndex)
 
 	_dmaActiveChannel = chIndex;
 
-	while(length-- > 0) {
+	while(length-- > 0 && ch.Enabled) {
 		uint32_t value;
 		if(srcAddr >= 0x2000000) {
 			if(!isRomSrc) {
@@ -288,6 +288,9 @@ void GbaDmaController::RunDma(GbaDmaChannel& ch, uint8_t chIndex)
 		ch.Enabled = false;
 		ch.Control &= ~0x8000;
 	} else {
+		//Length is reloaded from the register on each repeat
+		ch.LenLatch = ch.Length;
+
 		if(destMode == GbaDmaAddrMode::IncrementReload) {
 			ch.DestLatch = ch.Destination;
 		}

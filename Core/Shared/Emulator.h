@@ -112,6 +112,7 @@ private:
 
 	RomInfo _rom;
 	ConsoleType _consoleType = {};
+	ConsoleRegion _lastRegion = ConsoleRegion::Ntsc;
 
 	ConsoleMemoryInfo _consoleMemory[DebugUtilities::GetMemoryTypeCount()] = {};
 
@@ -210,6 +211,7 @@ public:
 	RewindManager* GetRewindManager() { return _rewindManager.get(); }
 	DebugHud* GetDebugHud() { return _debugHud.get(); }
 	DebugHud* GetScriptHud() { return _scriptHud.get(); }
+	DebugStats* GetDebugStats() { return _stats.get(); }
 	BatteryManager* GetBatteryManager() { return _batteryManager.get(); }
 	CheatManager* GetCheatManager() { return _cheatManager.get(); }
 	MovieManager* GetMovieManager() { return _movieManager.get(); }
