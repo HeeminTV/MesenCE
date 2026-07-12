@@ -191,7 +191,7 @@ protected:
 		entries.push_back(MapperStateEntry("$A000.5-6", "Mirroring", mirroringType, mirValue));
 		entries.push_back(MapperStateEntry("$A000.7", "IRQ Inhibited", _inhibitIrq, MapperStateValueType::Bool));
 
-		entries.push_back(MapperStateEntry("$B000", "IRQ Counter Value", _irqCounter, MapperStateValueType::Number16));
+		entries.push_back(MapperStateEntry("$B000", "IRQ Counter Value", _irqCounter & 0xFFF, MapperStateValueType::Number16));
 
 		return entries;
 	}
