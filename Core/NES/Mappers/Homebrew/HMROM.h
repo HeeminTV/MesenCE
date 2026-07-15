@@ -11,9 +11,8 @@ private:
 	unique_ptr<Sunsoft5bAudio> _audio2;
 
 	uint8_t _prgBank; // only used for state display
-	uint8_t _chrBanks[16];
-	uint8_t _chrOuter;
-	uint8_t _ramBank; // only used for state display
+	uint16_t _chrBanks[16];
+	bool _ramBank; // only used for state display
 
 	bool _inhibitIrq;
 	uint16_t _irqCounter; // actually 12-bit
@@ -34,11 +33,10 @@ protected:
 		_prgBank = GetPowerOnByte();
 		SelectPrgPage(0, _prgBank);
 		for(char i = 0; i <= 15; i++) {
-			_chrBanks[i] = GetPowerOnByte();
+			_chrBanks[i] = (GetPowerOnByte()) | ((GetPowerOnByte() & 0x0F) << 8);
+				(i, _chrBanks[i] | (i >= 8 ? 0x200000 : 0x000000));
 		}
-		_chrOuter = GetPowerOnByte() & 0x07;
-		UpdateChrStatus();
-		_ramBank = GetPowerOnByte() & 0x03;
+		_ramBank = GetPowerOnByte() & 0x01;
 		SetCpuMemoryMapping(0x6000, 0x7FFF, _ramBank, HasBattery() ? PrgMemoryType::SaveRam : PrgMemoryType::WorkRam, MemoryAccessType::ReadWrite);
 		_inhibitIrq = GetPowerOnByte() & 0x01;
 		_irqCounter = GetPowerOnByte() | ((GetPowerOnByte() << 8) & 0xF00);
@@ -61,7 +59,6 @@ protected:
 
 		SV(_prgBank);
 		SVArray(_chrBanks, 16);
-		SV(_chrOuter);
 		SV(_ramBank);
 		SV(_inhibitIrq);
 		SV(_irqCounter);
@@ -71,9 +68,12 @@ protected:
 	void ProcessCpuClock() override
 	{
 		BaseProcessCpuClock();
-		_audio->Clock();
-		_audio2->Clock();
-		_audio2->Clock();
+		if(_romInfo.SubMapperID & 0x01) {
+			_audio2->Clock();
+			_audio2->Clock();
+		} else {
+			_audio->Clock();
+		}
 	}
 
 	void WriteRegister(uint16_t addr, uint8_t value) override
@@ -84,22 +84,20 @@ protected:
 				SelectPrgPage(0, value);
 				break;
 			case 0x9000: // CHR bank select
-				_chrBanks[addr & 0x0F] = value;
-				UpdateChrStatus();
+				_chrBanks[(addr >> 4) & 0x0F] = value | ((addr & 0x0F) << 8);
+				SelectChrPage((addr >> 4) & 0x0F, (value | ((addr & 0x0F) << 8)) | (((addr >> 4) & 0x0F) >= 8 ? 0x200000 : 0x000000));
 				break;
 			case 0xA000: // Board settings
 				_inhibitIrq = value >> 7;
 				UpdateIrqStatus();
-				switch((value >> 5) & 0x03) {
+				switch(value & 0x03) {
 					case 0: SetMirroringType(MirroringType::Vertical); break;
 					case 1: SetMirroringType(MirroringType::Horizontal); break;
 					case 2: SetMirroringType(MirroringType::ScreenAOnly); break;
 					case 3: SetMirroringType(MirroringType::ScreenBOnly); break;
 				}
-				_ramBank = (value >> 3) & 0x03;
-				SetCpuMemoryMapping(0x6000, 0x7FFF, (value >> 3) & 0x03, HasBattery() ? PrgMemoryType::SaveRam : PrgMemoryType::WorkRam, MemoryAccessType::ReadWrite);
-				_chrOuter = value & 0x07;
-				UpdateChrStatus();
+				_ramBank = (value >> 6) & 0x01;
+				SetCpuMemoryMapping(0x6000, 0x7FFF, _ramBank, HasBattery() ? PrgMemoryType::SaveRam : PrgMemoryType::WorkRam, MemoryAccessType::ReadWrite);
 				break;
 			case 0xB000: // IRQ scanline counter value
 				_irqCounter = (value << 3) | 0x807;
@@ -112,13 +110,6 @@ protected:
 					_audio->WriteOPLL(addr & 0x01, value);
 				}
 				break;
-		}
-	}
-
-	inline void UpdateChrStatus()
-	{
-		for(int i = 0; i <= 15; i++) {
-			SelectChrPage(i, _chrBanks[i] | (_chrOuter << 9) | (i >= 8 ? 0x100 : 0x000));
 		}
 	}
 
@@ -169,26 +160,25 @@ protected:
 
 		entries.push_back(MapperStateEntry("$8000", "PRG Bank", _prgBank, MapperStateValueType::Number8));
 
-		entries.push_back(MapperStateEntry("$9000", "CHR Bank 0", _chrBanks[0], MapperStateValueType::Number8));
-		entries.push_back(MapperStateEntry("$9001", "CHR Bank 1", _chrBanks[1], MapperStateValueType::Number8));
-		entries.push_back(MapperStateEntry("$9002", "CHR Bank 2", _chrBanks[2], MapperStateValueType::Number8));
-		entries.push_back(MapperStateEntry("$9003", "CHR Bank 3", _chrBanks[3], MapperStateValueType::Number8));
-		entries.push_back(MapperStateEntry("$9004", "CHR Bank 4", _chrBanks[4], MapperStateValueType::Number8));
-		entries.push_back(MapperStateEntry("$9005", "CHR Bank 5", _chrBanks[5], MapperStateValueType::Number8));
-		entries.push_back(MapperStateEntry("$9006", "CHR Bank 6", _chrBanks[6], MapperStateValueType::Number8));
-		entries.push_back(MapperStateEntry("$9007", "CHR Bank 7", _chrBanks[7], MapperStateValueType::Number8));
-		entries.push_back(MapperStateEntry("$9008", "CHR Bank 8", _chrBanks[8], MapperStateValueType::Number8));
-		entries.push_back(MapperStateEntry("$9009", "CHR Bank 9", _chrBanks[9], MapperStateValueType::Number8));
-		entries.push_back(MapperStateEntry("$900A", "CHR Bank 10", _chrBanks[10], MapperStateValueType::Number8));
-		entries.push_back(MapperStateEntry("$900B", "CHR Bank 11", _chrBanks[11], MapperStateValueType::Number8));
-		entries.push_back(MapperStateEntry("$900C", "CHR Bank 12", _chrBanks[12], MapperStateValueType::Number8));
-		entries.push_back(MapperStateEntry("$900D", "CHR Bank 13", _chrBanks[13], MapperStateValueType::Number8));
-		entries.push_back(MapperStateEntry("$900E", "CHR Bank 14", _chrBanks[14], MapperStateValueType::Number8));
-		entries.push_back(MapperStateEntry("$900F", "CHR Bank 15", _chrBanks[15], MapperStateValueType::Number8));
+		entries.push_back(MapperStateEntry("$900x", "CHR Bank 0", _chrBanks[0], MapperStateValueType::Number16));
+		entries.push_back(MapperStateEntry("$901x", "CHR Bank 1", _chrBanks[1], MapperStateValueType::Number16));
+		entries.push_back(MapperStateEntry("$902x", "CHR Bank 2", _chrBanks[2], MapperStateValueType::Number16));
+		entries.push_back(MapperStateEntry("$903x", "CHR Bank 3", _chrBanks[3], MapperStateValueType::Number16));
+		entries.push_back(MapperStateEntry("$904x", "CHR Bank 4", _chrBanks[4], MapperStateValueType::Number16));
+		entries.push_back(MapperStateEntry("$905x", "CHR Bank 5", _chrBanks[5], MapperStateValueType::Number16));
+		entries.push_back(MapperStateEntry("$906x", "CHR Bank 6", _chrBanks[6], MapperStateValueType::Number16));
+		entries.push_back(MapperStateEntry("$907x", "CHR Bank 7", _chrBanks[7], MapperStateValueType::Number16));
+		entries.push_back(MapperStateEntry("$908x", "CHR Bank 8", _chrBanks[8], MapperStateValueType::Number16));
+		entries.push_back(MapperStateEntry("$909x", "CHR Bank 9", _chrBanks[9], MapperStateValueType::Number16));
+		entries.push_back(MapperStateEntry("$90Ax", "CHR Bank 10", _chrBanks[10], MapperStateValueType::Number16));
+		entries.push_back(MapperStateEntry("$90Bx", "CHR Bank 11", _chrBanks[11], MapperStateValueType::Number16));
+		entries.push_back(MapperStateEntry("$90Cx", "CHR Bank 12", _chrBanks[12], MapperStateValueType::Number16));
+		entries.push_back(MapperStateEntry("$90Dx", "CHR Bank 13", _chrBanks[13], MapperStateValueType::Number16));
+		entries.push_back(MapperStateEntry("$90Ex", "CHR Bank 14", _chrBanks[14], MapperStateValueType::Number16));
+		entries.push_back(MapperStateEntry("$90Fx", "CHR Bank 15", _chrBanks[15], MapperStateValueType::Number16));
 
-		entries.push_back(MapperStateEntry("$A000.0-2", "CHR Outer Bank", _chrOuter, MapperStateValueType::Number8));
-		entries.push_back(MapperStateEntry("$A000.3-4", "RAM Bank", _ramBank, MapperStateValueType::Number8));
-		entries.push_back(MapperStateEntry("$A000.5-6", "Mirroring", mirroringType, mirValue));
+		entries.push_back(MapperStateEntry("$A000.0-3", "Mirroring", mirroringType, mirValue));
+		entries.push_back(MapperStateEntry("$A000.6", "RAM Bank", _ramBank, MapperStateValueType::Bool));
 		entries.push_back(MapperStateEntry("$A000.7", "IRQ Inhibited", _inhibitIrq, MapperStateValueType::Bool));
 
 		entries.push_back(MapperStateEntry("$B000", "IRQ Counter Value", _irqCounter & 0xFFF, MapperStateValueType::Number16));
