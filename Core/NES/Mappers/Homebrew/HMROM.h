@@ -12,6 +12,7 @@ private:
 
 	uint8_t _prgBank; // only used for state display
 	uint16_t _chrBanks[16];
+	uint8_t _ntMirrVal; // only used for state display
 	bool _ramBank; // only used for state display
 
 	bool _inhibitIrq;
@@ -35,6 +36,15 @@ protected:
 		for(char i = 0; i <= 15; i++) {
 			_chrBanks[i] = (GetPowerOnByte()) | ((GetPowerOnByte() & 0x0F) << 8);
 				(i, _chrBanks[i] | (i >= 8 ? 0x200000 : 0x000000));
+		}
+		_ntMirrVal = GetPowerOnByte() & 0x03;
+		if(GetMirroringType() != MirroringType::FourScreens) {
+			switch(_ntMirrVal) {
+				case 0: SetMirroringType(MirroringType::Vertical); break;
+				case 1: SetMirroringType(MirroringType::Horizontal); break;
+				case 2: SetMirroringType(MirroringType::ScreenAOnly); break;
+				case 3: SetMirroringType(MirroringType::ScreenBOnly); break;
+			}
 		}
 		_ramBank = GetPowerOnByte() & 0x01;
 		SetCpuMemoryMapping(0x6000, 0x7FFF, _ramBank, HasBattery() ? PrgMemoryType::SaveRam : PrgMemoryType::WorkRam, MemoryAccessType::ReadWrite);
@@ -90,11 +100,13 @@ protected:
 			case 0xA000: // Board settings
 				_inhibitIrq = value >> 7;
 				UpdateIrqStatus();
-				switch(value & 0x03) {
-					case 0: SetMirroringType(MirroringType::Vertical); break;
-					case 1: SetMirroringType(MirroringType::Horizontal); break;
-					case 2: SetMirroringType(MirroringType::ScreenAOnly); break;
-					case 3: SetMirroringType(MirroringType::ScreenBOnly); break;
+				if(GetMirroringType() != MirroringType::FourScreens) {
+					switch(value & 0x03) {
+						case 0: SetMirroringType(MirroringType::Vertical); break;
+						case 1: SetMirroringType(MirroringType::Horizontal); break;
+						case 2: SetMirroringType(MirroringType::ScreenAOnly); break;
+						case 3: SetMirroringType(MirroringType::ScreenBOnly); break;
+					}
 				}
 				_ramBank = (value >> 6) & 0x01;
 				SetCpuMemoryMapping(0x6000, 0x7FFF, _ramBank, HasBattery() ? PrgMemoryType::SaveRam : PrgMemoryType::WorkRam, MemoryAccessType::ReadWrite);
@@ -137,24 +149,20 @@ protected:
 	vector<MapperStateEntry> GetMapperStateEntries() override
 	{
 		vector<MapperStateEntry> entries;
+
 		string mirroringType;
-		uint8_t mirValue = 0;
-		switch(GetMirroringType()) {
-			case MirroringType::Vertical:
+		switch(_ntMirrVal) {
+			case 0:
 				mirroringType = "Vertical";
-				mirValue = 0;
 				break;
-			case MirroringType::Horizontal:
+			case 1:
 				mirroringType = "Horizontal";
-				mirValue = 1;
 				break;
-			case MirroringType::ScreenAOnly:
+			case 2:
 				mirroringType = "Screen A";
-				mirValue = 2;
 				break;
-			case MirroringType::ScreenBOnly:
+			case 3:
 				mirroringType = "Screen B";
-				mirValue = 3;
 				break;
 		}
 
@@ -177,7 +185,7 @@ protected:
 		entries.push_back(MapperStateEntry("$90Ex", "CHR Bank 14", _chrBanks[14], MapperStateValueType::Number16));
 		entries.push_back(MapperStateEntry("$90Fx", "CHR Bank 15", _chrBanks[15], MapperStateValueType::Number16));
 
-		entries.push_back(MapperStateEntry("$A000.0-3", "Mirroring", mirroringType, mirValue));
+		entries.push_back(MapperStateEntry("$A000.0-3", "Mirroring", mirroringType, _ntMirrVal));
 		entries.push_back(MapperStateEntry("$A000.6", "RAM Bank", _ramBank, MapperStateValueType::Bool));
 		entries.push_back(MapperStateEntry("$A000.7", "IRQ Inhibited", _inhibitIrq, MapperStateValueType::Bool));
 
