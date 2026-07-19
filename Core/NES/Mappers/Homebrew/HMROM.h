@@ -100,8 +100,9 @@ protected:
 			case 0xA000: // Board settings
 				_inhibitIrq = value >> 7;
 				UpdateIrqStatus();
+				_ntMirrVal = value & 0x03;
 				if(GetMirroringType() != MirroringType::FourScreens) {
-					switch(value & 0x03) {
+					switch(_ntMirrVal) {
 						case 0: SetMirroringType(MirroringType::Vertical); break;
 						case 1: SetMirroringType(MirroringType::Horizontal); break;
 						case 2: SetMirroringType(MirroringType::ScreenAOnly); break;
